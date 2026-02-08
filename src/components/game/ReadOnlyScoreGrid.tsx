@@ -280,18 +280,30 @@ export function ReadOnlyScoreGrid({
             {game.playerIds.map((pid) => {
               let totalBids = 0;
               let totalTricks = 0;
+              let sets = 0;
               for (const round of game.rounds) {
                 if (!round.isComplete) continue;
                 const pr = round.playerRounds.find((p) => p.playerId === pid);
                 if (!pr) continue;
-                totalBids += (pr.boardLevel ?? 0) > 0 ? round.handSize : pr.bid;
+                const effectiveBid = (pr.boardLevel ?? 0) > 0 ? round.handSize : pr.bid;
+                totalBids += effectiveBid;
                 totalTricks += pr.tricksTaken;
+                if (effectiveBid > 0 && pr.tricksTaken < effectiveBid) {
+                  sets++;
+                }
               }
               return (
                 <td key={pid} className="py-2 px-1 text-center font-mono border-r border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-600 dark:text-slate-300">{totalBids}</span>
-                  <span className="text-slate-400 dark:text-slate-600">/</span>
-                  <span className="text-slate-600 dark:text-slate-300">{totalTricks}</span>
+                  <div className="leading-tight">
+                    <span className="text-slate-600 dark:text-slate-300">{totalBids}</span>
+                    <span className="text-slate-400 dark:text-slate-600">/</span>
+                    <span className="text-slate-600 dark:text-slate-300">{totalTricks}</span>
+                  </div>
+                  {sets > 0 && (
+                    <div className="text-[10px] text-red-500 dark:text-red-400 font-semibold">
+                      {sets} set{sets !== 1 ? 's' : ''}
+                    </div>
+                  )}
                 </td>
               );
             })}
