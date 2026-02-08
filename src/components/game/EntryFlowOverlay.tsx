@@ -91,15 +91,16 @@ function createInitialState(
 
 function flowReducer(state: FlowState, action: FlowAction, playerCount: number, handSize: number): FlowState {
   switch (action.type) {
-    case 'SELECT_SUIT':
-      return { ...state, phase: 'bids', playerStep: 0, suit: action.suit };
+    case 'SELECT_SUIT': {
+      const isRainbow = handSize === RAINBOW_HAND_SIZE;
+      return { ...state, phase: isRainbow ? 'rainbow' : 'bids', playerStep: 0, suit: action.suit };
+    }
 
     case 'SET_BID': {
       const newBids = [...state.bids];
       newBids[state.playerStep] = { bid: action.bid, boardLevel: action.boardLevel };
       if (state.playerStep + 1 >= playerCount) {
-        const isRainbow = handSize === RAINBOW_HAND_SIZE;
-        return { ...state, bids: newBids, phase: isRainbow ? 'rainbow' : 'commit_bids' };
+        return { ...state, bids: newBids, phase: 'commit_bids' };
       }
       return { ...state, bids: newBids, playerStep: state.playerStep + 1 };
     }
@@ -127,11 +128,14 @@ function flowReducer(state: FlowState, action: FlowAction, playerCount: number, 
       return { ...state, phase: 'jobo' };
 
     case 'DONE_JOBO':
-      return { ...state, phase: 'commit_bids' };
+      return { ...state, phase: 'bids', playerStep: 0 };
 
     case 'BACK': {
       if (state.phase === 'bids') {
-        if (state.playerStep === 0) return { ...state, phase: 'trump' };
+        if (state.playerStep === 0) {
+          const isRainbow = handSize === RAINBOW_HAND_SIZE;
+          return { ...state, phase: isRainbow ? 'jobo' : 'trump' };
+        }
         return { ...state, playerStep: state.playerStep - 1 };
       }
       if (state.phase === 'tricks') {
@@ -141,7 +145,7 @@ function flowReducer(state: FlowState, action: FlowAction, playerCount: number, 
         return { ...state, phase: 'tricks', playerStep: playerCount - 1 };
       }
       if (state.phase === 'rainbow') {
-        return { ...state, phase: 'bids', playerStep: playerCount - 1 };
+        return { ...state, phase: 'trump' };
       }
       if (state.phase === 'jobo') {
         return { ...state, phase: 'rainbow' };

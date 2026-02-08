@@ -18,7 +18,6 @@ interface GameState {
   setRainbowsForRound: (roundIndex: number, rainbows: { playerId: string; rainbow: boolean }[]) => void;
   setJobosForRound: (roundIndex: number, jobos: { playerId: string; jobo: boolean }[]) => void;
   completeRound: (roundIndex: number) => void;
-  goToRound: (roundIndex: number) => void;
   abandonGame: () => Promise<void>;
   _save: () => Promise<void>;
 }
@@ -110,7 +109,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setTrumpSuit: (roundIndex, suit) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     game.rounds[roundIndex].trumpSuit = suit;
     set({ game: { ...game } });
     get()._save();
@@ -118,7 +117,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setBid: (roundIndex, playerId, bid, boardLevel) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const round = game.rounds[roundIndex];
     const pr = round.playerRounds.find((p) => p.playerId === playerId);
     if (!pr) return;
@@ -140,7 +139,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setTricks: (roundIndex, playerId, tricks) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const pr = game.rounds[roundIndex].playerRounds.find((p) => p.playerId === playerId);
     if (!pr) return;
     pr.tricksTaken = tricks;
@@ -151,7 +150,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setRainbow: (roundIndex, playerId, rainbow) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const pr = game.rounds[roundIndex].playerRounds.find((p) => p.playerId === playerId);
     if (!pr) return;
     pr.rainbow = rainbow;
@@ -162,7 +161,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setBidsForRound: (roundIndex, suit, bids) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const round = game.rounds[roundIndex];
     round.trumpSuit = suit;
     for (const b of bids) {
@@ -180,7 +179,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setTricksForRound: (roundIndex, tricks) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const round = game.rounds[roundIndex];
     for (const t of tricks) {
       const pr = round.playerRounds.find((p) => p.playerId === t.playerId);
@@ -195,7 +194,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setRainbowsForRound: (roundIndex, rainbows) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const round = game.rounds[roundIndex];
     for (const r of rainbows) {
       const pr = round.playerRounds.find((p) => p.playerId === r.playerId);
@@ -210,7 +209,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   setJobosForRound: (roundIndex, jobos) => {
     const game = get().game;
-    if (!game) return;
+    if (!game || game.rounds[roundIndex].isComplete) return;
     const round = game.rounds[roundIndex];
     for (const j of jobos) {
       const pr = round.playerRounds.find((p) => p.playerId === j.playerId);
@@ -235,22 +234,6 @@ export const useGameStore = create<GameState>()((set, get) => ({
       game.completedAt = Date.now();
     }
 
-    set({ game: { ...game } });
-    get()._save();
-  },
-
-  goToRound: (roundIndex) => {
-    const game = get().game;
-    if (!game) return;
-    game.currentRoundIndex = roundIndex;
-    if (game.rounds[roundIndex].isComplete) {
-      game.rounds[roundIndex].isComplete = false;
-      game.rounds[roundIndex].bidsEntered = false;
-      if (game.status === 'completed') {
-        game.status = 'in_progress';
-        game.completedAt = undefined;
-      }
-    }
     set({ game: { ...game } });
     get()._save();
   },
