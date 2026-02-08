@@ -2,10 +2,10 @@ import { RAINBOW_HAND_SIZE, RAINBOW_BONUS } from './constants.ts';
 
 /**
  * Board multiplier per trick by level:
- *   Level 1: 6, Level 2: 12, Level 3: 24, Level 4: 48, Level 5: 96
+ *   Level 1: 6, Level 2: 12, Level 3: 18, Level 4: 24, Level 5: 30
  */
 export function boardMultiplier(boardLevel: number): number {
-  return 6 * Math.pow(2, boardLevel - 1);
+  return 6 * boardLevel;
 }
 
 export function calculateScore(

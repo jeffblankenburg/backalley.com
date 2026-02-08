@@ -4,9 +4,9 @@ import { calculateScore, boardMultiplier } from './scoring.ts';
 describe('boardMultiplier', () => {
   it('level 1 → 6', () => expect(boardMultiplier(1)).toBe(6));
   it('level 2 → 12', () => expect(boardMultiplier(2)).toBe(12));
-  it('level 3 → 24', () => expect(boardMultiplier(3)).toBe(24));
-  it('level 4 → 48', () => expect(boardMultiplier(4)).toBe(48));
-  it('level 5 → 96', () => expect(boardMultiplier(5)).toBe(96));
+  it('level 3 → 18', () => expect(boardMultiplier(3)).toBe(18));
+  it('level 4 → 24', () => expect(boardMultiplier(4)).toBe(24));
+  it('level 5 → 30', () => expect(boardMultiplier(5)).toBe(30));
 });
 
 describe('calculateScore', () => {
@@ -96,37 +96,37 @@ describe('calculateScore', () => {
     });
   });
 
-  describe('triple board (level 3, 24x)', () => {
-    it('triple board on 5, make → +120', () => {
-      expect(calculateScore(5, 3, 5, 5, false)).toBe(120);
+  describe('triple board (level 3, 18x)', () => {
+    it('triple board on 5, make → +90', () => {
+      expect(calculateScore(5, 3, 5, 5, false)).toBe(90);
     });
 
-    it('triple board on 5, miss → -120', () => {
-      expect(calculateScore(5, 3, 4, 5, false)).toBe(-120);
-    });
-  });
-
-  describe('quad board (level 4, 48x)', () => {
-    it('quad board on 5, make → +240', () => {
-      expect(calculateScore(5, 4, 5, 5, false)).toBe(240);
-    });
-
-    it('quad board on 5, miss → -240', () => {
-      expect(calculateScore(5, 4, 2, 5, false)).toBe(-240);
+    it('triple board on 5, miss → -90', () => {
+      expect(calculateScore(5, 3, 4, 5, false)).toBe(-90);
     });
   });
 
-  describe('quintuple board (level 5, 96x)', () => {
-    it('quint board on 5, make → +480', () => {
-      expect(calculateScore(5, 5, 5, 5, false)).toBe(480);
+  describe('quad board (level 4, 24x)', () => {
+    it('quad board on 5, make → +120', () => {
+      expect(calculateScore(5, 4, 5, 5, false)).toBe(120);
     });
 
-    it('quint board on 5, miss → -480', () => {
-      expect(calculateScore(5, 5, 0, 5, false)).toBe(-480);
+    it('quad board on 5, miss → -120', () => {
+      expect(calculateScore(5, 4, 2, 5, false)).toBe(-120);
+    });
+  });
+
+  describe('quintuple board (level 5, 30x)', () => {
+    it('quint board on 5, make → +150', () => {
+      expect(calculateScore(5, 5, 5, 5, false)).toBe(150);
     });
 
-    it('quint board on 10, make → +960', () => {
-      expect(calculateScore(10, 5, 10, 10, false)).toBe(960);
+    it('quint board on 5, miss → -150', () => {
+      expect(calculateScore(5, 5, 0, 5, false)).toBe(-150);
+    });
+
+    it('quint board on 10, make → +300', () => {
+      expect(calculateScore(10, 5, 10, 10, false)).toBe(300);
     });
   });
 
