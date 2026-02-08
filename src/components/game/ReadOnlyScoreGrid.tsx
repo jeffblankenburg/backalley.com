@@ -272,6 +272,33 @@ export function ReadOnlyScoreGrid({
             );
           })}
         </tbody>
+        <tfoot>
+          <tr className="border-t-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80">
+            <td className="py-2 px-1 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 border-r border-slate-200 dark:border-slate-700">
+              &Sigma;
+            </td>
+            {game.playerIds.map((pid) => {
+              let totalBids = 0;
+              let totalTricks = 0;
+              for (const round of game.rounds) {
+                if (!round.isComplete) continue;
+                const pr = round.playerRounds.find((p) => p.playerId === pid);
+                if (!pr) continue;
+                totalBids += (pr.boardLevel ?? 0) > 0 ? round.handSize : pr.bid;
+                totalTricks += pr.tricksTaken;
+              }
+              return (
+                <td key={pid} className="py-2 px-1 text-center font-mono border-r border-slate-200 dark:border-slate-700">
+                  <span className="text-slate-600 dark:text-slate-300">{totalBids}</span>
+                  <span className="text-slate-400 dark:text-slate-600">/</span>
+                  <span className="text-slate-600 dark:text-slate-300">{totalTricks}</span>
+                </td>
+              );
+            })}
+            <td className="border-r border-slate-200 dark:border-slate-700" />
+            <td />
+          </tr>
+        </tfoot>
       </table>
 
       {/* Enter Tricks button below grid when bids are entered */}
