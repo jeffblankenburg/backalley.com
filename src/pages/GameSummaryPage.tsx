@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useGameDetail } from '../hooks/useGameDetail.ts';
 import { usePlayers } from '../hooks/usePlayers.ts';
 import { GameRoundTable } from '../components/history/GameRoundTable.tsx';
+import { AnnounceScoresButton } from '../components/game/AnnounceScoresButton.tsx';
 
 export function GameSummaryPage() {
   const { id } = useParams<{ id: string }>();
@@ -47,6 +48,8 @@ export function GameSummaryPage() {
       </div>
 
       <GameRoundTable game={game} players={players} />
+
+      <AnnounceScoresButton game={game} players={players} currentRoundIndex={game.rounds.length - 1} />
 
       <Link
         to="/"

@@ -14,7 +14,6 @@ interface ReadOnlyScoreGridProps {
   players: Player[];
   onEnterBids: (roundIndex: number) => void;
   onEnterTricks: (roundIndex: number) => void;
-  onEditRound: (roundIndex: number) => void;
 }
 
 export function ReadOnlyScoreGrid({
@@ -22,7 +21,6 @@ export function ReadOnlyScoreGrid({
   players,
   onEnterBids,
   onEnterTricks,
-  onEditRound,
 }: ReadOnlyScoreGridProps) {
   const currentRowRef = useRef<HTMLTableRowElement>(null);
 
@@ -168,17 +166,11 @@ export function ReadOnlyScoreGrid({
               <tr
                 key={ri}
                 ref={isCurrent ? currentRowRef : undefined}
-                onClick={() => {
-                  if (isComplete && !isCurrent) onEditRound(ri);
-                }}
                 className={[
                   'border-t',
                   isCurrent
                     ? 'border-blue-300 dark:border-blue-700 bg-blue-50/80 dark:bg-blue-950/30'
                     : 'border-slate-100 dark:border-slate-800',
-                  isComplete && !isCurrent
-                    ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                    : '',
                   isFuture ? 'opacity-25' : '',
                 ].join(' ')}
               >

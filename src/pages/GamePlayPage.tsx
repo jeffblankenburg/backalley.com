@@ -19,7 +19,7 @@ export function GamePlayPage() {
   const setTricksForRound = useGameStore((s) => s.setTricksForRound);
   const setRainbowsForRound = useGameStore((s) => s.setRainbowsForRound);
   const completeRound = useGameStore((s) => s.completeRound);
-  const goToRound = useGameStore((s) => s.goToRound);
+
 
   const [showComplete, setShowComplete] = useState(false);
   const [entryFlow, setEntryFlow] = useState<{ roundIndex: number; phase: 'trump' | 'tricks' } | null>(null);
@@ -42,10 +42,6 @@ export function GamePlayPage() {
     setEntryFlow({ roundIndex, phase: 'tricks' });
   }
 
-  function handleEditRound(roundIndex: number) {
-    goToRound(roundIndex);
-    setEntryFlow({ roundIndex, phase: 'trump' });
-  }
 
   function handleCommitBids(suit: Suit, bids: { playerId: string; bid: number; boardLevel: number }[], rainbows: { playerId: string; rainbow: boolean }[]) {
     if (!entryFlow || !game) return;
@@ -78,7 +74,6 @@ export function GamePlayPage() {
         players={players}
         onEnterBids={handleEnterBids}
         onEnterTricks={handleEnterTricks}
-        onEditRound={handleEditRound}
       />
 
       <AnnounceScoresButton game={game} players={players} currentRoundIndex={game.currentRoundIndex} />
