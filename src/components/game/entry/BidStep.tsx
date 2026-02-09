@@ -13,6 +13,11 @@ interface BidStepProps {
   maxBoardInRound: number;
   onBid: (bid: number, boardLevel: number) => void;
   onBack: () => void;
+  isRainbowRound?: boolean;
+  rainbow?: boolean;
+  jobo?: boolean;
+  onToggleRainbow?: () => void;
+  onToggleJobo?: () => void;
 }
 
 export function BidStep({
@@ -27,6 +32,11 @@ export function BidStep({
   maxBoardInRound,
   onBid,
   onBack,
+  isRainbowRound,
+  rainbow,
+  jobo,
+  onToggleRainbow,
+  onToggleJobo,
 }: BidStepProps) {
   const nextBoardLevel = Math.min(maxBoardInRound + 1, MAX_BOARD_LEVEL);
   const isBoard = boardLevel > 0;
@@ -62,6 +72,35 @@ export function BidStep({
           />
         ))}
       </div>
+
+      {isRainbowRound && (
+        <div className="w-full max-w-xs flex gap-2">
+          <button
+            type="button"
+            onClick={onToggleRainbow}
+            className={[
+              'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95',
+              rainbow
+                ? 'bg-gradient-to-r from-red-400 to-emerald-400 text-white'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+            ].join(' ')}
+          >
+            Rainbow
+          </button>
+          <button
+            type="button"
+            onClick={onToggleJobo}
+            className={[
+              'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95',
+              jobo
+                ? 'bg-purple-500 text-white'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+            ].join(' ')}
+          >
+            JoeBow
+          </button>
+        </div>
+      )}
 
       <div className="w-full max-w-xs">
         <NumberPad

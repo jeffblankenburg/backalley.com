@@ -1,29 +1,30 @@
 import { useState } from 'react';
 import { useGames } from '../hooks/useGames.ts';
 import { usePlayers } from '../hooks/usePlayers.ts';
+import { useAuthContext } from '../context/AuthContext.tsx';
 import { StatsDashboard } from '../components/stats/StatsDashboard.tsx';
 import { simulateGame } from '../lib/simulate.ts';
+import { createCompletedGameInSupabase } from '../lib/supabaseGameService.ts';
 import { PLAYER_COUNT } from '../lib/constants.ts';
-import { db } from '../db/index.ts';
 
 export function StatsPage() {
-  const { games } = useGames();
+  const { games, refetch } = useGames();
   const { players } = usePlayers();
+  const { user } = useAuthContext();
   const [simulating, setSimulating] = useState(false);
 
   async function handleSimulate(count: number) {
-    if (players.length < PLAYER_COUNT) return;
+    if (players.length < PLAYER_COUNT || !user) return;
     setSimulating(true);
     try {
-      const newGames = [];
       for (let i = 0; i < count; i++) {
-        // Pick 5 random players
         const shuffled = [...players].sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, PLAYER_COUNT).map((p) => p.id);
         const dealerIndex = Math.floor(Math.random() * PLAYER_COUNT);
-        newGames.push(simulateGame(selected, dealerIndex));
+        const game = simulateGame(selected, dealerIndex);
+        await createCompletedGameInSupabase(game, user.id);
       }
-      await db.games.bulkAdd(newGames);
+      await refetch();
     } finally {
       setSimulating(false);
     }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayers } from '../../hooks/usePlayers.ts';
 import { useGameStore } from '../../store/gameStore.ts';
+import { useAuthContext } from '../../context/AuthContext.tsx';
 import { PlayerSelector } from './PlayerSelector.tsx';
 import { DealerPicker } from './DealerPicker.tsx';
 import { PLAYER_COUNT } from '../../lib/constants.ts';
@@ -9,6 +10,7 @@ import { PLAYER_COUNT } from '../../lib/constants.ts';
 export function GameSetupForm() {
   const { players } = usePlayers();
   const createGame = useGameStore((s) => s.createGame);
+  const { user } = useAuthContext();
   const navigate = useNavigate();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -29,8 +31,8 @@ export function GameSetupForm() {
   }
 
   async function handleStart() {
-    if (selectedIds.length !== PLAYER_COUNT || dealerIndex === null) return;
-    const id = await createGame(selectedIds, dealerIndex);
+    if (selectedIds.length !== PLAYER_COUNT || dealerIndex === null || !user) return;
+    const id = await createGame(selectedIds, dealerIndex, user.id);
     navigate(`/game/${id}`);
   }
 

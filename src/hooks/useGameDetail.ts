@@ -1,7 +1,16 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/index.ts';
+import { useEffect, useState } from 'react';
+import { loadGameFromSupabase } from '../lib/supabaseGameService.ts';
+import type { Game } from '../types/index.ts';
 
 export function useGameDetail(id: string | undefined) {
-  const game = useLiveQuery(() => (id ? db.games.get(id) : undefined), [id]);
+  const [game, setGame] = useState<Game | undefined>();
+
+  useEffect(() => {
+    if (!id) return;
+    loadGameFromSupabase(id).then((result) => {
+      setGame(result?.game);
+    });
+  }, [id]);
+
   return { game };
 }

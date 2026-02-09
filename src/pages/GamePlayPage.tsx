@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore.ts';
 import { usePlayers } from '../hooks/usePlayers.ts';
+import { useAuthContext } from '../context/AuthContext.tsx';
 import { ReadOnlyScoreGrid } from '../components/game/ReadOnlyScoreGrid.tsx';
 import { EntryFlowOverlay } from '../components/game/EntryFlowOverlay.tsx';
 import { AnnounceScoresButton } from '../components/game/AnnounceScoresButton.tsx';
@@ -13,6 +14,7 @@ export function GamePlayPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { players } = usePlayers();
+  const { user } = useAuthContext();
   const game = useGameStore((s) => s.game);
   const loadGame = useGameStore((s) => s.loadGame);
   const setBidsForRound = useGameStore((s) => s.setBidsForRound);
@@ -99,8 +101,9 @@ export function GamePlayPage() {
         players={players}
         onPlayAgain={async () => {
           setShowComplete(false);
+          if (!user) return;
           const nextDealer = (game.startingDealerIndex + 1) % game.playerIds.length;
-          const newId = await createGame(game.playerIds, nextDealer);
+          const newId = await createGame(game.playerIds, nextDealer, user.id);
           navigate(`/game/${newId}`);
         }}
         onViewSummary={() => {

@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useGameDetail } from '../hooks/useGameDetail.ts';
 import { usePlayers } from '../hooks/usePlayers.ts';
 import { useGameStore } from '../store/gameStore.ts';
+import { useAuthContext } from '../context/AuthContext.tsx';
 import { GameRoundTable } from '../components/history/GameRoundTable.tsx';
 import { AnnounceScoresButton } from '../components/game/AnnounceScoresButton.tsx';
 
@@ -11,6 +12,7 @@ export function GameSummaryPage() {
   const { game } = useGameDetail(id);
   const { players } = usePlayers();
   const createGame = useGameStore((s) => s.createGame);
+  const { user } = useAuthContext();
 
   if (!game) {
     return <p className="text-center py-12 text-slate-500">Loading...</p>;
@@ -56,8 +58,9 @@ export function GameSummaryPage() {
 
       <button
         onClick={async () => {
+          if (!user) return;
           const nextDealer = (game.startingDealerIndex + 1) % game.playerIds.length;
-          const newId = await createGame(game.playerIds, nextDealer);
+          const newId = await createGame(game.playerIds, nextDealer, user.id);
           navigate(`/game/${newId}`);
         }}
         className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold transition-colors hover:bg-emerald-600"

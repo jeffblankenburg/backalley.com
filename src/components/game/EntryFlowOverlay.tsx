@@ -4,10 +4,8 @@ import { RAINBOW_HAND_SIZE } from '../../lib/constants.ts';
 import { TrumpStep } from './entry/TrumpStep.tsx';
 import { BidStep } from './entry/BidStep.tsx';
 import { TricksStep } from './entry/TricksStep.tsx';
-import { RainbowStep } from './entry/RainbowStep.tsx';
-import { JoBoStep } from './entry/JoBoStep.tsx';
 
-type FlowPhase = 'trump' | 'bids' | 'tricks' | 'tricks_error' | 'rainbow' | 'jobo' | 'commit_bids' | 'commit_tricks';
+type FlowPhase = 'trump' | 'bids' | 'tricks' | 'tricks_error' | 'commit_bids' | 'commit_tricks';
 
 interface FlowState {
   phase: FlowPhase;
@@ -25,8 +23,6 @@ type FlowAction =
   | { type: 'SET_TRICKS'; tricks: number }
   | { type: 'TOGGLE_RAINBOW'; playerId: string }
   | { type: 'TOGGLE_JOBO'; playerId: string }
-  | { type: 'DONE_RAINBOW' }
-  | { type: 'DONE_JOBO' }
   | { type: 'BACK' };
 
 interface EntryFlowOverlayProps {
@@ -79,8 +75,7 @@ function createInitialState(
 function flowReducer(state: FlowState, action: FlowAction, playerCount: number, handSize: number): FlowState {
   switch (action.type) {
     case 'SELECT_SUIT': {
-      const isRainbow = handSize === RAINBOW_HAND_SIZE;
-      return { ...state, phase: isRainbow ? 'rainbow' : 'bids', playerStep: 0, suit: action.suit };
+      return { ...state, phase: 'bids', playerStep: 0, suit: action.suit };
     }
 
     case 'SET_BID': {
@@ -111,17 +106,10 @@ function flowReducer(state: FlowState, action: FlowAction, playerCount: number, 
     case 'TOGGLE_JOBO':
       return { ...state, jobos: { ...state.jobos, [action.playerId]: !state.jobos[action.playerId] } };
 
-    case 'DONE_RAINBOW':
-      return { ...state, phase: 'jobo' };
-
-    case 'DONE_JOBO':
-      return { ...state, phase: 'bids', playerStep: 0 };
-
     case 'BACK': {
       if (state.phase === 'bids') {
         if (state.playerStep === 0) {
-          const isRainbow = handSize === RAINBOW_HAND_SIZE;
-          return { ...state, phase: isRainbow ? 'jobo' : 'trump' };
+          return { ...state, phase: 'trump' };
         }
         return { ...state, playerStep: state.playerStep - 1 };
       }
@@ -130,12 +118,6 @@ function flowReducer(state: FlowState, action: FlowAction, playerCount: number, 
       }
       if (state.phase === 'tricks_error') {
         return { ...state, phase: 'tricks', playerStep: playerCount - 1 };
-      }
-      if (state.phase === 'rainbow') {
-        return { ...state, phase: 'trump' };
-      }
-      if (state.phase === 'jobo') {
-        return { ...state, phase: 'rainbow' };
       }
       return state;
     }
@@ -213,64 +195,6 @@ export function EntryFlowOverlay({
     );
   }
 
-  // Rainbow step
-  if (state.phase === 'rainbow') {
-    const playerList = playerIds.map((pid) => ({
-      id: pid,
-      name: players.find((p) => p.id === pid)?.name ?? '?',
-    }));
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <span className="text-sm text-slate-400">
-            Round {round.roundIndex + 1} &middot; {round.handSize} cards
-          </span>
-          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white text-2xl">
-            &times;
-          </button>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <RainbowStep
-            players={playerList}
-            rainbows={state.rainbows}
-            onToggle={(pid) => dispatch({ type: 'TOGGLE_RAINBOW', playerId: pid })}
-            onDone={() => dispatch({ type: 'DONE_RAINBOW' })}
-            onBack={() => dispatch({ type: 'BACK' })}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // JoBo step
-  if (state.phase === 'jobo') {
-    const playerList = playerIds.map((pid) => ({
-      id: pid,
-      name: players.find((p) => p.id === pid)?.name ?? '?',
-    }));
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <span className="text-sm text-slate-400">
-            Round {round.roundIndex + 1} &middot; {round.handSize} cards
-          </span>
-          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white text-2xl">
-            &times;
-          </button>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <JoBoStep
-            players={playerList}
-            jobos={state.jobos}
-            onToggle={(pid) => dispatch({ type: 'TOGGLE_JOBO', playerId: pid })}
-            onDone={() => dispatch({ type: 'DONE_JOBO' })}
-            onBack={() => dispatch({ type: 'BACK' })}
-          />
-        </div>
-      </div>
-    );
-  }
-
   // Current player info
   const currentBidTotal = state.bids
     .slice(0, state.playerStep)
@@ -284,9 +208,11 @@ export function EntryFlowOverlay({
 
   const currentOrder = bidOrder;
   const currentPlayerGlobalIdx = currentOrder[state.playerStep];
-  const currentPlayer = players.find((p) => p.id === playerIds[currentPlayerGlobalIdx]);
+  const currentPlayerId = playerIds[currentPlayerGlobalIdx];
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const currentPlayerName = currentPlayer?.name ?? '?';
-  const isDealer = playerIds[currentPlayerGlobalIdx] === round.dealerPlayerId;
+  const isDealer = currentPlayerId === round.dealerPlayerId;
+  const isRainbowRound = round.handSize === RAINBOW_HAND_SIZE;
 
   const handleBack = () => {
     if (state.phase === 'tricks' && state.playerStep === 0) {
@@ -329,6 +255,11 @@ export function EntryFlowOverlay({
             maxBoardInRound={maxBoardInRound}
             onBid={(bid, boardLevel) => dispatch({ type: 'SET_BID', bid, boardLevel })}
             onBack={handleBack}
+            isRainbowRound={isRainbowRound}
+            rainbow={state.rainbows[currentPlayerId] ?? false}
+            jobo={state.jobos[currentPlayerId] ?? false}
+            onToggleRainbow={() => dispatch({ type: 'TOGGLE_RAINBOW', playerId: currentPlayerId })}
+            onToggleJobo={() => dispatch({ type: 'TOGGLE_JOBO', playerId: currentPlayerId })}
           />
         )}
 

@@ -1,14 +1,23 @@
 import { create } from 'zustand';
-import type { Game, Round, Suit } from '../types/index.ts';
-import { ROUND_HAND_SIZES, TOTAL_ROUNDS } from '../lib/constants.ts';
-import { calculateScore } from '../lib/scoring.ts';
-import { generateId } from '../lib/utils.ts';
-import { db } from '../db/index.ts';
+import type { Game, Suit } from '../types/index.ts';
+import { TOTAL_ROUNDS } from '../lib/constants.ts';
+import {
+  createGameInSupabase,
+  loadGameFromSupabase,
+  deleteGameFromSupabase,
+  updateGameRow,
+  updateRoundRow,
+  updatePlayerRoundRow,
+  recalcScores,
+} from '../lib/supabaseGameService.ts';
 
 interface GameState {
   game: Game | null;
+  _roundIdMap: Map<number, string>;
+  _playerRoundIdMap: Map<string, string>;
+  _dirtyRoundIndexes: Set<number>;
   loadGame: (id: string) => Promise<void>;
-  createGame: (playerIds: string[], startingDealerIndex: number) => Promise<string>;
+  createGame: (playerIds: string[], startingDealerIndex: number, createdBy: string) => Promise<string>;
   setTrumpSuit: (roundIndex: number, suit: Suit) => void;
   setBid: (roundIndex: number, playerId: string, bid: number, boardLevel: number) => void;
   setTricks: (roundIndex: number, playerId: string, tricks: number) => void;
@@ -22,95 +31,37 @@ interface GameState {
   _save: () => Promise<void>;
 }
 
-function buildRounds(playerIds: string[], startingDealerIndex: number): Round[] {
-  return ROUND_HAND_SIZES.map((handSize, roundIndex) => ({
-    roundIndex,
-    handSize,
-    trumpSuit: null,
-    dealerPlayerId: playerIds[(startingDealerIndex + roundIndex) % playerIds.length],
-    playerRounds: playerIds.map((playerId) => ({
-      playerId,
-      bid: 0,
-      boardLevel: 0,
-      tricksTaken: 0,
-      rainbow: false,
-      jobo: false,
-      score: 0,
-      cumulativeScore: 0,
-    })),
-    bidsEntered: false,
-    isComplete: false,
-  }));
-}
-
-function recalcScores(game: Game): void {
-  for (let ri = 0; ri < game.rounds.length; ri++) {
-    const round = game.rounds[ri];
-    for (const pr of round.playerRounds) {
-      pr.score = calculateScore(pr.bid, pr.boardLevel, pr.tricksTaken, round.handSize, pr.rainbow);
-      if (ri === 0) {
-        pr.cumulativeScore = pr.score;
-      } else {
-        const prev = game.rounds[ri - 1].playerRounds.find((p) => p.playerId === pr.playerId);
-        pr.cumulativeScore = (prev?.cumulativeScore ?? 0) + pr.score;
-      }
-    }
-  }
-}
-
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useGameStore = create<GameState>()((set, get) => ({
   game: null,
+  _roundIdMap: new Map(),
+  _playerRoundIdMap: new Map(),
+  _dirtyRoundIndexes: new Set(),
 
   loadGame: async (id: string) => {
-    const game = await db.games.get(id);
-    if (game) {
-      // Migrate old games that used bidType instead of boardLevel
-      for (const round of game.rounds) {
-        for (const pr of round.playerRounds) {
-          if (pr.boardLevel === undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const legacy = pr as any;
-            pr.boardLevel = legacy.bidType === 'board' ? 1 : 0;
-            delete legacy.bidType;
-          }
-        }
-        // Migrate old games missing bidsEntered
-        if (round.bidsEntered === undefined) {
-          round.bidsEntered = round.isComplete || round.trumpSuit !== null;
-        }
-        // Migrate old games missing jobo
-        for (const pr of round.playerRounds) {
-          if (pr.jobo === undefined) {
-            pr.jobo = false;
-          }
-        }
-      }
-      set({ game });
+    const result = await loadGameFromSupabase(id);
+    if (result) {
+      set({
+        game: result.game,
+        _roundIdMap: result.roundIdMap,
+        _playerRoundIdMap: result.playerRoundIdMap,
+        _dirtyRoundIndexes: new Set(),
+      });
     }
   },
 
-  createGame: async (playerIds: string[], startingDealerIndex: number) => {
-    const id = generateId();
-    const game: Game = {
-      id,
-      createdAt: Date.now(),
-      status: 'in_progress',
-      playerIds,
-      startingDealerIndex,
-      rounds: buildRounds(playerIds, startingDealerIndex),
-      currentRoundIndex: 0,
-    };
-    await db.games.add(game);
-    set({ game });
-    return id;
+  createGame: async (playerIds: string[], startingDealerIndex: number, createdBy: string) => {
+    const gameId = await createGameInSupabase(playerIds, startingDealerIndex, createdBy);
+    await get().loadGame(gameId);
+    return gameId;
   },
 
   setTrumpSuit: (roundIndex, suit) => {
     const game = get().game;
     if (!game || game.rounds[roundIndex].isComplete) return;
     game.rounds[roundIndex].trumpSuit = suit;
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -124,7 +75,6 @@ export const useGameStore = create<GameState>()((set, get) => ({
     const wasBoard = (pr.boardLevel ?? 0) > 0;
     pr.bid = bid;
     pr.boardLevel = boardLevel;
-    // If a player unchecks their board, reset all other boards in the round
     if (wasBoard && boardLevel === 0) {
       for (const other of round.playerRounds) {
         if (other.playerId !== playerId) {
@@ -133,6 +83,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
       }
     }
     recalcScores(game);
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -144,6 +95,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
     if (!pr) return;
     pr.tricksTaken = tricks;
     recalcScores(game);
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -155,6 +107,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
     if (!pr) return;
     pr.rainbow = rainbow;
     recalcScores(game);
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -173,6 +126,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
     }
     round.bidsEntered = true;
     recalcScores(game);
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -188,6 +142,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
       }
     }
     recalcScores(game);
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -203,6 +158,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
       }
     }
     recalcScores(game);
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -217,6 +173,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
         pr.jobo = j.jobo;
       }
     }
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -234,6 +191,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
       game.completedAt = Date.now();
     }
 
+    get()._dirtyRoundIndexes.add(roundIndex);
     set({ game: { ...game } });
     get()._save();
   },
@@ -241,17 +199,62 @@ export const useGameStore = create<GameState>()((set, get) => ({
   abandonGame: async () => {
     const game = get().game;
     if (!game) return;
-    await db.games.delete(game.id);
-    set({ game: null });
+    await deleteGameFromSupabase(game.id);
+    set({ game: null, _roundIdMap: new Map(), _playerRoundIdMap: new Map(), _dirtyRoundIndexes: new Set() });
   },
 
   _save: async () => {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {
-      const game = get().game;
-      if (game) {
-        await db.games.put(game);
+      const { game, _roundIdMap, _playerRoundIdMap, _dirtyRoundIndexes } = get();
+      if (!game) return;
+
+      const dirtyIndexes = [..._dirtyRoundIndexes];
+      set({ _dirtyRoundIndexes: new Set() });
+
+      const promises: Promise<void>[] = [];
+
+      // Always update the game row
+      promises.push(
+        updateGameRow(game.id, {
+          status: game.status,
+          current_round_index: game.currentRoundIndex,
+          completed_at: game.completedAt ? new Date(game.completedAt).toISOString() : null,
+        }),
+      );
+
+      // Update dirty rounds and their player_rounds
+      for (const ri of dirtyIndexes) {
+        const round = game.rounds[ri];
+        const roundId = _roundIdMap.get(ri);
+        if (!roundId) continue;
+
+        promises.push(
+          updateRoundRow(roundId, {
+            trump_suit: round.trumpSuit,
+            bids_entered: round.bidsEntered,
+            is_complete: round.isComplete,
+          }),
+        );
+
+        for (const pr of round.playerRounds) {
+          const prId = _playerRoundIdMap.get(`${ri}:${pr.playerId}`);
+          if (!prId) continue;
+          promises.push(
+            updatePlayerRoundRow(prId, {
+              bid: pr.bid,
+              board_level: pr.boardLevel,
+              tricks_taken: pr.tricksTaken,
+              rainbow: pr.rainbow,
+              jobo: pr.jobo,
+              score: pr.score,
+              cumulative_score: pr.cumulativeScore,
+            }),
+          );
+        }
       }
+
+      await Promise.all(promises);
     }, 300);
   },
 }));

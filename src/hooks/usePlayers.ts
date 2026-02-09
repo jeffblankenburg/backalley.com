@@ -1,24 +1,31 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/index.ts';
-import type { Player } from '../types/index.ts';
-import { generateId } from '../lib/utils.ts';
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase.ts';
+import type { Profile, Player } from '../types/index.ts';
+import { profileToPlayer } from '../types/index.ts';
 
 export function usePlayers() {
-  const players = useLiveQuery(() => db.players.orderBy('name').toArray()) ?? [];
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
 
-  async function addPlayer(name: string): Promise<Player> {
-    const player: Player = { id: generateId(), name: name.trim(), createdAt: Date.now() };
-    await db.players.add(player);
-    return player;
+  const fetchProfiles = useCallback(async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name, email, created_at')
+      .order('display_name');
+    if (data) {
+      setProfiles(data);
+      setPlayers(data.map(profileToPlayer));
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [fetchProfiles]);
+
+  async function updateDisplayName(userId: string, name: string) {
+    await supabase.from('profiles').update({ display_name: name.trim() }).eq('id', userId);
+    fetchProfiles();
   }
 
-  async function renamePlayer(id: string, name: string) {
-    await db.players.update(id, { name: name.trim() });
-  }
-
-  async function deletePlayer(id: string) {
-    await db.players.delete(id);
-  }
-
-  return { players, addPlayer, renamePlayer, deletePlayer };
+  return { profiles, players, updateDisplayName, refetch: fetchProfiles };
 }

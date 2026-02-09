@@ -11,10 +11,25 @@ export const BOARD_LABELS: Record<number, string> = {
   5: 'Quint Board',
 };
 
+export interface Profile {
+  id: string;
+  display_name: string;
+  email: string | null;
+  created_at: string;
+}
+
 export interface Player {
   id: string;
   name: string;
   createdAt: number;
+}
+
+export function profileToPlayer(profile: Profile): Player {
+  return {
+    id: profile.id,
+    name: profile.display_name,
+    createdAt: new Date(profile.created_at).getTime(),
+  };
 }
 
 export interface PlayerRound {
