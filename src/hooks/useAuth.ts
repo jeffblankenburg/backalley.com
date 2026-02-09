@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase.ts';
+import { supabase, siteUrl } from '../lib/supabase.ts';
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -27,7 +27,7 @@ export function useAuth() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin + window.location.pathname,
+        emailRedirectTo: siteUrl,
       },
     });
     return { error };

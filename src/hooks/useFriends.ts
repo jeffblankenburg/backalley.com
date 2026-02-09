@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase.ts';
+import { supabase, siteUrl } from '../lib/supabase.ts';
 import { useAuthContext } from '../context/AuthContext.tsx';
 import type { Profile } from '../types/index.ts';
 
@@ -94,7 +94,7 @@ export function useFriends() {
     // Send magic link to invite them
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, emailRedirectTo: siteUrl },
     });
 
     if (error) {
@@ -168,7 +168,7 @@ export function useFriends() {
     // ON UPDATE CASCADE propagates to friends, game_players, etc.
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: trimmedEmail,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, emailRedirectTo: siteUrl },
     });
 
     if (!otpError) {

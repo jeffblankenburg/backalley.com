@@ -9,3 +9,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce', // compatible with HashRouter (uses query params, not fragments)
   },
 });
+
+export const siteUrl = import.meta.env.VITE_SITE_URL as string | undefined ?? window.location.origin;
