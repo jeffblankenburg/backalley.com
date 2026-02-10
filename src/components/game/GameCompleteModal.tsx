@@ -1,4 +1,5 @@
 import type { Game, Player } from '../../types/index.ts';
+import { announceScores } from '../../lib/standings.ts';
 
 interface GameCompleteModalProps {
   open: boolean;
@@ -16,9 +17,13 @@ export function GameCompleteModal({ open, game, players, onViewSummary, onPlayAg
     .map((pid) => {
       const pr = lastRound.playerRounds.find((p) => p.playerId === pid);
       const player = players.find((p) => p.id === pid);
-      return { name: player?.name ?? '?', score: pr?.cumulativeScore ?? 0 };
+      return { name: player?.firstName || (player?.name ?? '?'), score: pr?.cumulativeScore ?? 0 };
     })
     .sort((a, b) => b.score - a.score);
+
+  function handleAnnounce() {
+    announceScores(standings.map((s, i) => ({ ...s, position: i + 1 })));
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -43,6 +48,13 @@ export function GameCompleteModal({ open, game, players, onViewSummary, onPlayAg
           ))}
         </div>
         <div className="space-y-2">
+          <button
+            onClick={handleAnnounce}
+            className="w-full py-3 rounded-xl bg-slate-200 dark:bg-slate-700 font-bold transition-colors hover:bg-slate-300 dark:hover:bg-slate-600 flex items-center justify-center gap-2"
+          >
+            <span className="text-xl">🔊</span>
+            <span>Announce Standings</span>
+          </button>
           <button
             onClick={onPlayAgain}
             className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold transition-colors hover:bg-emerald-600"

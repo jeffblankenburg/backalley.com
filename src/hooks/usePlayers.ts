@@ -6,6 +6,7 @@ import { profileToPlayer } from '../types/index.ts';
 export function usePlayers() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchProfiles = useCallback(async () => {
     const { data } = await supabase
@@ -16,6 +17,7 @@ export function usePlayers() {
       setProfiles(data);
       setPlayers(data.map(profileToPlayer));
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -33,5 +35,5 @@ export function usePlayers() {
     fetchProfiles();
   }
 
-  return { profiles, players, updateName, refetch: fetchProfiles };
+  return { profiles, players, loading, updateName, refetch: fetchProfiles };
 }

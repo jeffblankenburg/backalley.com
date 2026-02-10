@@ -81,8 +81,10 @@ export function BidStep({
             className={[
               'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95',
               rainbow
-                ? 'bg-gradient-to-r from-red-400 to-emerald-400 text-white'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+                ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300 dark:ring-blue-700'
+                : jobo
+                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                  : 'bg-rainbow text-white',
             ].join(' ')}
           >
             Rainbow
@@ -93,8 +95,10 @@ export function BidStep({
             className={[
               'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95',
               jobo
-                ? 'bg-purple-500 text-white'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+                ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300 dark:ring-blue-700'
+                : rainbow
+                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                  : 'bg-joebow text-white',
             ].join(' ')}
           >
             JoeBow

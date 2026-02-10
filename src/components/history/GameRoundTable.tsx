@@ -1,4 +1,5 @@
 import type { Game, Player } from '../../types/index.ts';
+import { getInitials } from '../../types/index.ts';
 import { ScoreBadge } from '../common/ScoreBadge.tsx';
 import { SuitIcon } from '../common/SuitIcon.tsx';
 
@@ -8,19 +9,20 @@ interface GameRoundTableProps {
 }
 
 export function GameRoundTable({ game, players }: GameRoundTableProps) {
+  const gamePlayers = game.playerIds.map((id) => players.find((p) => p.id === id)).filter(Boolean) as Player[];
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
           <tr className="bg-slate-100 dark:bg-slate-800">
-            <th className="p-2 text-left font-medium text-slate-500 dark:text-slate-400">Rd</th>
             <th className="p-2 text-center font-medium text-slate-500 dark:text-slate-400">#</th>
             <th className="p-2 text-center font-medium text-slate-500 dark:text-slate-400">Trump</th>
             {game.playerIds.map((pid) => {
               const player = players.find((p) => p.id === pid);
               return (
-                <th key={pid} className="p-2 text-right font-medium text-slate-500 dark:text-slate-400 truncate max-w-[60px]">
-                  {player?.name?.slice(0, 6)}
+                <th key={pid} className="p-2 text-right font-medium text-slate-500 dark:text-slate-400">
+                  {player ? getInitials(player, gamePlayers) : '?'}
                 </th>
               );
             })}
@@ -29,7 +31,6 @@ export function GameRoundTable({ game, players }: GameRoundTableProps) {
         <tbody>
           {game.rounds.filter((r) => r.isComplete).map((round) => (
             <tr key={round.roundIndex} className="border-t border-slate-100 dark:border-slate-800">
-              <td className="p-2 font-mono">{round.roundIndex + 1}</td>
               <td className="p-2 text-center font-mono">{round.handSize}</td>
               <td className="p-2 text-center">
                 {round.trumpSuit && <SuitIcon suit={round.trumpSuit} size="sm" />}

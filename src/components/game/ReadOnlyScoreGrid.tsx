@@ -209,7 +209,7 @@ export function ReadOnlyScoreGrid({
                       key={pid}
                       className={[
                         'py-1 px-1 text-center border-r border-slate-200 dark:border-slate-700',
-                        isBoard ? 'bg-amber-50/40 dark:bg-amber-950/10' : '',
+                        pr.rainbow ? 'bg-rainbow-cell' : pr.jobo ? 'bg-joebow-cell' : isBoard ? 'bg-amber-50/40 dark:bg-amber-950/10' : '',
                       ].join(' ')}
                     >
                       <div className="leading-tight">
@@ -229,7 +229,6 @@ export function ReadOnlyScoreGrid({
                         >
                           {pr.tricksTaken}
                         </span>
-                        {pr.rainbow && <span className="text-[7px]"> R</span>}
                       </div>
                       <div
                         className={[
@@ -241,6 +240,8 @@ export function ReadOnlyScoreGrid({
                               : 'text-slate-400',
                         ].join(' ')}
                       >
+                        {pr.rainbow && <span className="text-[8px]">🌈</span>}
+                        {pr.jobo && <span className="text-[8px]">👎</span>}
                         {pr.cumulativeScore}
                       </div>
                     </td>

@@ -87,6 +87,7 @@ export interface Round {
 
 export interface Game {
   id: string;
+  createdBy: string;
   createdAt: number;
   completedAt?: number;
   status: GameStatus;

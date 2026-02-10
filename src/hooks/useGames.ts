@@ -6,16 +6,18 @@ import type { Game } from '../types/index.ts';
 export function useGames() {
   const { user } = useAuthContext();
   const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
     if (!user) return;
     const data = await fetchAllGamesForUser(user.id);
     setGames(data);
+    setLoading(false);
   }, [user]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
-  return { games, refetch };
+  return { games, loading, refetch };
 }

@@ -33,6 +33,7 @@ function makeCompletedGame(
 
   return {
     id: `game-${Math.random()}`,
+    createdBy: playerIds[0],
     createdAt: Date.now(),
     completedAt: Date.now(),
     status: 'completed',

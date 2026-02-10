@@ -90,6 +90,7 @@ function assembleGame(row: GameRow): { game: Game; roundIdMap: Map<number, strin
 
   const game: Game = {
     id: row.id,
+    createdBy: row.created_by,
     createdAt: new Date(row.created_at).getTime(),
     completedAt: row.completed_at ? new Date(row.completed_at).getTime() : undefined,
     status: row.status as Game['status'],

@@ -54,11 +54,6 @@ export function PlayerSearch({ onSearch, onAdd }: PlayerSearchProps) {
             >
               <div className="flex-1 min-w-0">
                 <span className="font-medium truncate block">{profile.display_name}</span>
-                {profile.email && (
-                  <span className="text-xs text-slate-500 dark:text-slate-400 truncate block">
-                    {profile.email}
-                  </span>
-                )}
               </div>
               <button
                 onClick={() => handleAdd(profile.id)}

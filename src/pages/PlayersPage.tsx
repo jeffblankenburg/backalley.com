@@ -48,7 +48,7 @@ export function PlayersPage() {
                   placeholder="First"
                   maxLength={20}
                   autoFocus
-                  className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="min-w-0 flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 <input
                   type="text"
@@ -56,7 +56,7 @@ export function PlayersPage() {
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last"
                   maxLength={20}
-                  className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="min-w-0 flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <div className="flex gap-2 justify-end">

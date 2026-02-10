@@ -2,41 +2,47 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } f
 import type { Game, Player } from '../../types/index.ts';
 import { getHandSizePerformance } from '../../lib/stats.ts';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
 interface PerformanceByRoundProps {
   games: Game[];
   players: Player[];
+  userId: string;
+  userName: string;
 }
 
-export function PerformanceByRound({ games, players }: PerformanceByRoundProps) {
-  const activePlayers = players.filter((p) =>
-    games.some((g) => g.status === 'completed' && g.playerIds.includes(p.id)),
+export function PerformanceByRound({ games, players, userId, userName }: PerformanceByRoundProps) {
+  const userPerf = getHandSizePerformance(games, userId);
+
+  if (userPerf.length === 0) return null;
+
+  // Compute average across all other players who have appeared in the user's games
+  const otherPlayers = players.filter((p) =>
+    p.id !== userId && games.some((g) => g.status === 'completed' && g.playerIds.includes(p.id)),
   );
 
-  if (activePlayers.length === 0) return null;
-
-  const allSizes = new Set<number>();
-  const byPlayer = new Map<string, Map<number, number>>();
-
-  for (const player of activePlayers) {
-    const perf = getHandSizePerformance(games, player.id);
-    const map = new Map<number, number>();
-    for (const p of perf) {
-      map.set(p.handSize, Math.round(p.avgScore * 10) / 10);
-      allSizes.add(p.handSize);
+  const avgBySize = new Map<number, { total: number; count: number }>();
+  for (const p of otherPlayers) {
+    const perf = getHandSizePerformance(games, p.id);
+    for (const entry of perf) {
+      const agg = avgBySize.get(entry.handSize) ?? { total: 0, count: 0 };
+      agg.total += entry.avgScore;
+      agg.count++;
+      avgBySize.set(entry.handSize, agg);
     }
-    byPlayer.set(player.id, map);
   }
+
+  const allSizes = new Set(userPerf.map((p) => p.handSize));
+  for (const hs of avgBySize.keys()) allSizes.add(hs);
 
   const data = Array.from(allSizes)
     .sort((a, b) => a - b)
     .map((hs) => {
-      const point: Record<string, number> = { handSize: hs };
-      for (const player of activePlayers) {
-        point[player.name] = byPlayer.get(player.id)?.get(hs) ?? 0;
-      }
-      return point;
+      const userEntry = userPerf.find((p) => p.handSize === hs);
+      const avgEntry = avgBySize.get(hs);
+      return {
+        handSize: hs,
+        [userName]: userEntry ? Math.round(userEntry.avgScore * 10) / 10 : undefined,
+        Average: avgEntry ? Math.round((avgEntry.total / avgEntry.count) * 10) / 10 : undefined,
+      };
     });
 
   return (
@@ -48,16 +54,23 @@ export function PerformanceByRound({ games, players }: PerformanceByRoundProps) 
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip />
           <Legend />
-          {activePlayers.map((p, i) => (
-            <Line
-              key={p.id}
-              type="monotone"
-              dataKey={p.name}
-              stroke={COLORS[i % COLORS.length]}
-              strokeWidth={2}
-              dot={{ r: 3 }}
-            />
-          ))}
+          <Line
+            type="monotone"
+            dataKey={userName}
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="Average"
+            stroke="#94a3b8"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+            dot={false}
+            connectNulls
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

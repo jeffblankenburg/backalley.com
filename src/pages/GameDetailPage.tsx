@@ -1,17 +1,26 @@
-import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useGameDetail } from '../hooks/useGameDetail.ts';
 import { usePlayers } from '../hooks/usePlayers.ts';
+import { useAuthContext } from '../context/AuthContext.tsx';
 import { GameRoundTable } from '../components/history/GameRoundTable.tsx';
+import { ConfirmDialog } from '../components/common/ConfirmDialog.tsx';
+import { deleteGameFromSupabase } from '../lib/supabaseGameService.ts';
 import { formatDateTime } from '../lib/utils.ts';
 
 export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { game } = useGameDetail(id);
   const { players } = usePlayers();
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+  const [showDelete, setShowDelete] = useState(false);
 
   if (!game) {
     return <p className="text-center py-12 text-slate-500">Loading...</p>;
   }
+
+  const isCreator = user?.id === game.createdBy;
 
   const lastRound = game.rounds[game.rounds.length - 1];
   const standings = game.playerIds
@@ -21,6 +30,12 @@ export function GameDetailPage() {
       return { name: player?.name ?? '?', score: pr?.cumulativeScore ?? 0 };
     })
     .sort((a, b) => b.score - a.score);
+
+  async function handleDelete() {
+    if (!id) return;
+    await deleteGameFromSupabase(id);
+    navigate('/history');
+  }
 
   return (
     <div className="space-y-4">
@@ -52,6 +67,24 @@ export function GameDetailPage() {
       </div>
 
       <GameRoundTable game={game} players={players} />
+
+      {isCreator && (
+        <button
+          onClick={() => setShowDelete(true)}
+          className="w-full py-2.5 rounded-xl text-red-500 border border-red-300 dark:border-red-800 text-sm font-medium transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          Delete Game
+        </button>
+      )}
+
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete Game"
+        message="This will permanently remove this game and all its data from the system. This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDelete(false)}
+      />
     </div>
   );
 }

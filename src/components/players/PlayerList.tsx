@@ -23,11 +23,6 @@ export function FriendsList({ friends, onRemove }: FriendsListProps) {
         >
           <div className="flex-1 min-w-0">
             <span className="font-medium truncate block">{friend.display_name}</span>
-            {friend.email && (
-              <span className="text-xs text-slate-500 dark:text-slate-400 truncate block">
-                {friend.email}
-              </span>
-            )}
           </div>
           <button
             onClick={() => onRemove(friend.id)}

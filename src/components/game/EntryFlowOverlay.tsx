@@ -100,11 +100,23 @@ function flowReducer(state: FlowState, action: FlowAction, playerCount: number, 
       return { ...state, tricks: newTricks, playerStep: state.playerStep + 1 };
     }
 
-    case 'TOGGLE_RAINBOW':
-      return { ...state, rainbows: { ...state.rainbows, [action.playerId]: !state.rainbows[action.playerId] } };
+    case 'TOGGLE_RAINBOW': {
+      const newVal = !state.rainbows[action.playerId];
+      return {
+        ...state,
+        rainbows: { ...state.rainbows, [action.playerId]: newVal },
+        jobos: newVal ? { ...state.jobos, [action.playerId]: false } : state.jobos,
+      };
+    }
 
-    case 'TOGGLE_JOBO':
-      return { ...state, jobos: { ...state.jobos, [action.playerId]: !state.jobos[action.playerId] } };
+    case 'TOGGLE_JOBO': {
+      const newVal = !state.jobos[action.playerId];
+      return {
+        ...state,
+        jobos: { ...state.jobos, [action.playerId]: newVal },
+        rainbows: newVal ? { ...state.rainbows, [action.playerId]: false } : state.rainbows,
+      };
+    }
 
     case 'BACK': {
       if (state.phase === 'bids') {
