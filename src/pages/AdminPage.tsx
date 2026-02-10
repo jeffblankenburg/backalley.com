@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAdmin } from '../hooks/useAdmin.ts';
 import { useAuthContext } from '../context/AuthContext.tsx';
-import { ConfirmDialog } from '../components/common/ConfirmDialog.tsx';
 import { formatDateTime } from '../lib/utils.ts';
 import type { Profile } from '../types/index.ts';
 
@@ -12,7 +11,8 @@ export function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFirst, setEditFirst] = useState('');
   const [editLast, setEditLast] = useState('');
-  const [disablingId, setDisablingId] = useState<string | null>(null);
+  const [editIsAdmin, setEditIsAdmin] = useState(false);
+  const [editDisabled, setEditDisabled] = useState(false);
   const [tab, setTab] = useState<'active' | 'disabled'>('active');
 
   if (loading) {
@@ -23,32 +23,35 @@ export function AdminPage() {
     return <Navigate to="/" replace />;
   }
 
-  function startEdit(id: string, first: string, last: string) {
-    setEditingId(id);
-    setEditFirst(first);
-    setEditLast(last);
+  function startEdit(profile: Profile) {
+    setEditingId(profile.id);
+    setEditFirst(profile.first_name);
+    setEditLast(profile.last_name);
+    setEditIsAdmin(profile.is_admin);
+    setEditDisabled(profile.disabled);
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditFirst('');
     setEditLast('');
+    setEditIsAdmin(false);
+    setEditDisabled(false);
   }
 
   async function saveEdit(id: string) {
     if (editFirst.trim() && editLast.trim()) {
       const displayName = `${editFirst.trim()} ${editLast.trim()}`;
-      await updateProfile(id, { display_name: displayName, first_name: editFirst.trim(), last_name: editLast.trim() });
+      const isCurrentUser = id === user?.id;
+      await updateProfile(id, {
+        display_name: displayName,
+        first_name: editFirst.trim(),
+        last_name: editLast.trim(),
+        ...(!isCurrentUser && { is_admin: editIsAdmin, disabled: editDisabled }),
+      });
     }
     cancelEdit();
   }
-
-  async function toggleAdmin(id: string, currentValue: boolean) {
-    if (id === user?.id) return;
-    await updateProfile(id, { is_admin: !currentValue });
-  }
-
-  const disablingProfile = profiles.find((p) => p.id === disablingId);
 
   const activeProfiles = profiles.filter((p) => !p.disabled);
   const disabledProfiles = profiles.filter((p) => p.disabled);
@@ -72,7 +75,7 @@ export function AdminPage() {
           {isEditing ? (
             <form
               onSubmit={(e) => { e.preventDefault(); saveEdit(profile.id); }}
-              className="flex-1 space-y-2"
+              className="min-w-0 flex-1 space-y-2"
             >
               <div className="flex gap-2">
                 <input
@@ -82,7 +85,7 @@ export function AdminPage() {
                   placeholder="First"
                   maxLength={20}
                   autoFocus
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="min-w-0 flex-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 <input
                   type="text"
@@ -90,9 +93,31 @@ export function AdminPage() {
                   onChange={(e) => setEditLast(e.target.value)}
                   placeholder="Last"
                   maxLength={20}
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="min-w-0 flex-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
+              {!isCurrentUser && (
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editIsAdmin}
+                      onChange={(e) => setEditIsAdmin(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-slate-600 dark:text-slate-400">Admin</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editDisabled}
+                      onChange={(e) => setEditDisabled(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-red-500">Disabled</span>
+                  </label>
+                </div>
+              )}
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
@@ -119,6 +144,11 @@ export function AdminPage() {
                       Admin
                     </span>
                   )}
+                  {!profile.confirmed && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-medium">
+                      Invited
+                    </span>
+                  )}
                   {isCurrentUser && (
                     <span className="text-xs text-blue-500">(you)</span>
                   )}
@@ -131,46 +161,12 @@ export function AdminPage() {
                 </p>
               </div>
 
-              <div className="flex gap-1.5 flex-wrap justify-end">
-                <button
-                  onClick={() => startEdit(profile.id, profile.first_name, profile.last_name)}
-                  className="px-2.5 py-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                >
-                  Edit
-                </button>
-                {!isCurrentUser && (
-                  <button
-                    onClick={() => toggleAdmin(profile.id, profile.is_admin)}
-                    className={[
-                      'px-2.5 py-1.5 text-xs rounded-lg transition-colors',
-                      profile.is_admin
-                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50'
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600',
-                    ].join(' ')}
-                  >
-                    {profile.is_admin ? 'Remove Admin' : 'Make Admin'}
-                  </button>
-                )}
-                {!isCurrentUser && (
-                  <button
-                    onClick={() => {
-                      if (profile.disabled) {
-                        updateProfile(profile.id, { disabled: false });
-                      } else {
-                        setDisablingId(profile.id);
-                      }
-                    }}
-                    className={[
-                      'px-2.5 py-1.5 text-xs rounded-lg transition-colors',
-                      profile.disabled
-                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
-                        : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
-                    ].join(' ')}
-                  >
-                    {profile.disabled ? 'Enable' : 'Disable'}
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => startEdit(profile)}
+                className="px-2.5 py-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                Edit
+              </button>
             </>
           )}
         </div>
@@ -217,19 +213,6 @@ export function AdminPage() {
         )}
       </div>
 
-      <ConfirmDialog
-        open={!!disablingId}
-        title="Disable Account"
-        message={`Disable ${disablingProfile?.display_name ?? 'this user'}? They won't be able to sign in or appear in player lists. Their game history will be preserved. This can be reversed.`}
-        confirmLabel="Disable Account"
-        onConfirm={async () => {
-          if (disablingId) {
-            await updateProfile(disablingId, { disabled: true });
-          }
-          setDisablingId(null);
-        }}
-        onCancel={() => setDisablingId(null)}
-      />
     </div>
   );
 }

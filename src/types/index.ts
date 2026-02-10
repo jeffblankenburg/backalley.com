@@ -19,6 +19,7 @@ export interface Profile {
   email: string | null;
   is_admin: boolean;
   disabled: boolean;
+  confirmed: boolean;
   created_at: string;
 }
 

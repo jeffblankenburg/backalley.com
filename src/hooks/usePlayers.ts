@@ -11,7 +11,7 @@ export function usePlayers() {
   const fetchProfiles = useCallback(async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, first_name, last_name, email, is_admin, disabled, created_at')
+      .select('id, display_name, first_name, last_name, email, is_admin, disabled, confirmed, created_at')
       .order('display_name');
     if (data) {
       setProfiles(data);

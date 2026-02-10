@@ -29,7 +29,7 @@ export function PlayersPage() {
     setEditingName(false);
   }
 
-  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [friendsOpen, setFriendsOpen] = useState(true);
 
   return (
     <div className="space-y-6">

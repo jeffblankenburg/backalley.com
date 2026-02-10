@@ -13,6 +13,7 @@ create table public.profiles (
   email text,
   is_admin boolean not null default false,
   disabled boolean not null default false,
+  confirmed boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -28,16 +29,17 @@ begin
   if exists (select 1 from public.profiles where email = new.email and id != new.id) then
     -- Update the existing profile's ID to match the auth user's ID.
     -- ON UPDATE CASCADE on child tables propagates this change automatically.
-    update public.profiles set id = new.id, updated_at = now()
+    update public.profiles set id = new.id, confirmed = true, updated_at = now()
     where email = new.email and id != new.id;
   else
-    insert into public.profiles (id, display_name, first_name, last_name, email)
+    insert into public.profiles (id, display_name, first_name, last_name, email, confirmed)
     values (
       new.id,
       coalesce(new.raw_user_meta_data ->> 'display_name', split_part(new.email, '@', 1)),
       coalesce(new.raw_user_meta_data ->> 'first_name', split_part(new.email, '@', 1)),
       coalesce(new.raw_user_meta_data ->> 'last_name', ''),
-      new.email
+      new.email,
+      true
     );
   end if;
   return new;

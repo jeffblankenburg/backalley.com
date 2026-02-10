@@ -10,6 +10,7 @@ export interface Database {
           email: string | null;
           is_admin: boolean;
           disabled: boolean;
+          confirmed: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -21,6 +22,7 @@ export interface Database {
           email?: string | null;
           is_admin?: boolean;
           disabled?: boolean;
+          confirmed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -31,6 +33,7 @@ export interface Database {
           email?: string | null;
           is_admin?: boolean;
           disabled?: boolean;
+          confirmed?: boolean;
           updated_at?: string;
         };
         Relationships: [];

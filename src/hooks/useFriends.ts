@@ -24,7 +24,7 @@ export function useFriends() {
     const friendIds = data.map((row) => row.friend_id);
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, display_name, first_name, last_name, email, is_admin, disabled, created_at')
+      .select('id, display_name, first_name, last_name, email, is_admin, disabled, confirmed, created_at')
       .in('id', friendIds)
       .eq('disabled', false)
       .order('display_name');
@@ -57,7 +57,7 @@ export function useFriends() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, first_name, last_name, email, is_admin, disabled, created_at')
+      .select('id, display_name, first_name, last_name, email, is_admin, disabled, confirmed, created_at')
       .eq('disabled', false)
       .ilike('display_name', `%${query.trim()}%`)
       .not('id', 'in', `(${excludeIds.join(',')})`)
